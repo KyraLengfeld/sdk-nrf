@@ -146,23 +146,6 @@ static K_THREAD_STACK_DEFINE(mpsl_work_stack, CONFIG_MPSL_WORK_STACK_SIZE);
 
 #if IS_ENABLED(CONFIG_MPSL_USE_ZEPHYR_PM)
 
-/** @brief Type representing a handle to a power management latency request object.
- *         This is internal to the Power Manager and should not be accessed by NRF. */
-typedef struct {
-    uintptr_t node;
-    uint32_t value_us;
-}mpsl_pm_latency_request_t;
-
-/** @brief Type representing a handle to a power management event object.
- *         This is internal to the Power Manager and should not be accessed by NRF. */
-typedef struct {
-    uintptr_t node;
-    uint32_t value_cyc;
-}mpsl_pm_event_t;
-
-static mpsl_pm_latency_request_t * p_mpsl_pm_latency_req;
-static mpsl_pm_event_t * p_mpsl_pm_event;
-
 static uint8_t 		m_pm_prev_flag_value;
 static bool 		m_pm_latency_idle_set;
 static bool 		m_pm_event_is_scheduled;
@@ -198,7 +181,7 @@ static bool m_update_latency_pm(uint32_t value_us)
 {
 	if(m_check_if_pm_latency_needs_updating(value_us))
 	{
-		pm_policy_latency_request_update(p_mpsl_pm_latency_req, value_us);
+		pm_policy_latency_request_update(&pm_policy_latency_request, value_us);
 	}
 	if(value_us/* == PM_MAX_LATENCY_IDLE*/)
 	{
@@ -212,27 +195,23 @@ static bool m_update_latency_pm(uint32_t value_us)
 
 static void m_pm_work()
 {
-	uint8_t we_are_too_slow = 0;
-	do
-	{
-		we_are_too_slow++;
+	m_pm_prev_flag_value                    = mpsl_pm_param_to_zephyr.mpsl_pm_flag;
+	uint32_t value_us                       = mpsl_pm_param_to_zephyr.mpsl_pm_latency_req_value_us;
+	uint64_t abs_time_us                    = mpsl_pm_param_to_zephyr.mpsl_pm_event_absolute_time_us;
+	uint8_t event_valid_flag                = mpsl_pm_param_to_zephyr.mpsl_pm_event_valid_flag;
 
-		m_pm_prev_flag_value                    = mpsl_pm_param_to_zephyr.mpsl_pm_flag;
-		uint32_t value_us                       = mpsl_pm_param_to_zephyr.mpsl_pm_latency_req_value_us;
-  		uint32_t time_us                        = mpsl_pm_param_to_zephyr.mpsl_pm_event_time_us;
-		uint8_t event_valid_flag                = mpsl_pm_param_to_zephyr.mpsl_pm_event_valid_flag;
-	} while (m_check_if_pm_work_is_needed() && (we_are_too_slow < 4)); /* High prio changed mpsl_pm_param_to_zephyr, read params again. */
-	if(we_are_too_slow < 4)  /* Not too slow */
+	/* High prio did not change mpsl_pm_param_to_zephyr, while we read the params. */
+	if(m_pm_prev_flag_value == mpsl_pm_param_to_zephyr.mpsl_pm_flag)
 	{
 		if(event_valid_flag) /* Before event */
 		{
 			if(m_pm_event_is_scheduled)
 			{
-				pm_policy_event_update(p_mpsl_pm_event, time_us);
+				pm_policy_event_update(&pm_policy_event, mpsl_pm_get_realtive_event_time(abs_time_us));
 			}
 			else
 			{
-				pm_policy_event_register(p_mpsl_pm_event, time_us);
+				pm_policy_event_register(&pm_policy_event, mpsl_pm_get_realtive_event_time(abs_time_us));
 			}
 			m_pm_event_is_scheduled = true;
 
@@ -246,14 +225,10 @@ static void m_pm_work()
 			if(m_pm_latency_idle_set) /* After event */
 			{
 				/* Note: While m_pm_latency_idle_set is also true before the event, the else already excludes that case.*/
-				pm_policy_event_unregister(p_mpsl_pm_event);
+				pm_policy_event_unregister(&pm_policy_events);
 				m_pm_event_is_scheduled = false;
 			}
 		}
-	}
-	else /*High prio keeps changing parameters too quick, it can be assumed many events are scheduled, so set zero latency.*/
-	{
-		m_pm_latency_idle_set = m_update_latency_pm(0);
 	}
 	return;
 }
@@ -441,14 +416,12 @@ static void mpsl_calibration_work_handler(struct k_work *work)
 #if IS_ENABLED(CONFIG_MPSL_USE_ZEPHYR_PM)
 static void m_pm_init()
 {
-	p_mpsl_pm_latency_req = NULL;
-	p_mpsl_pm_event = NULL;
 	m_pm_prev_flag_value = 0;
 	m_pm_event_is_scheduled = false;
-	/* so that PM doesn't shut us off power when we are idle i.e. CPU running in open loop configuration*/
+	/* So that PM doesn't shut us off power when we are idle.*/
 	/* see min. residency times: https://github.com/nrfconnect/sdk-sysctrl/blob/master/sysctrl/conf/pm.overlay#L19*/
 	/* we want max sleep?? -> PM_MAX_LATENCY_IDLE < 5000000us*/
-	pm_policy_latency_request_add(p_mpsl_pm_latency_req, PM_MAX_LATENCY_IDLE);
+	pm_policy_latency_request_add(&pm_policy_latency_request, PM_MAX_LATENCY_IDLE);
 	m_pm_latency_idle_set = true;
 
 	mpsl_pm_init_params();
