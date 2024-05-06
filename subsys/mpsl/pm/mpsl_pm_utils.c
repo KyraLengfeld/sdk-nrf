@@ -8,6 +8,7 @@
 #include <mpsl_pm.h>
 #include <mpsl_pm_config.h>
 #include <zephyr/pm/policy.h>
+#include <zephyr/pm/device_runtime.h>
 #include <zephyr/logging/log.h>
 
 #include <mpsl/mpsl_work.h>
@@ -32,6 +33,19 @@ static uint32_t                         m_prev_lat_value_us;
 static struct pm_policy_latency_request m_latency_req;
 static struct pm_policy_event           m_evt;
 
+static void m_get_or_put_device(const struct device *dev, bool get)
+{
+	if (get) {
+		/* "get" device (increases usage count, resumes device if suspended) */
+		if (pm_device_runtime_get(dev))  {
+			__ASSERT(false, "pm_device_runtime_get failed.");
+		}
+	}
+	/* "put" device (decreases usage count, suspends device if no more users) */
+	if (pm_device_runtime_put(dev))  {
+		__ASSERT(false, "pm_device_runtime_put failed.");
+	}
+}
 
 static void m_update_latency_request(uint32_t lat_value_us)
 {
@@ -55,6 +69,11 @@ void mpsl_pm_utils_work_handler(void)
 		m_pm_prev_flag_value = params.cnt_flag;
 		return;
 	}
+	/* First process if a device needs power.*/
+	if (dev_params.dev_active != dev_params.dev_get) {
+		m_get_or_put_device(device, dev_params.dev_get);
+	}
+
 	switch (params.event_state) {
 	case MPSL_PM_EVENT_STATE_NO_EVENTS_LEFT:
 	{

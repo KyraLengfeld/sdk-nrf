@@ -411,14 +411,15 @@ static int mpsl_lib_init_sys(void)
 {
 	int err = 0;
 
+#if IS_ENABLED(CONFIG_MPSL_USE_ZEPHYR_PM)
+	mpsl_pm_utils_init(); /* For this WIP placed here, as device PM needs to be init before*/
+	// alternatively, get device here, only put on uninit from high prio into workqueue
+#endif
+
 	err = mpsl_lib_init_internal();
 	if (err) {
 		return err;
 	}
-
-#if IS_ENABLED(CONFIG_MPSL_USE_ZEPHYR_PM)
-	mpsl_pm_utils_init();
-#endif
 
 #if IS_ENABLED(CONFIG_MPSL_DYNAMIC_INTERRUPTS)
 	/* Ensure IRQs are disabled before attaching. */
