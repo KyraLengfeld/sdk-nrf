@@ -1,0 +1,42 @@
+/*
+ * Copyright (c) 2023 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+ */
+
+ / {
+	leds0 {
+	    compatible = "gpio-leds";
+	    led1: led_1 {
+		gpios = <&gpio9 1 GPIO_ACTIVE_HIGH>;
+		label = "Green LED 1";
+	    };
+	};
+
+	aliases {
+	    led1 = &led1;
+	};
+
+	chosen {
+	    zephyr,console = &uart136;
+	};
+    };
+
+    &gpio9 {
+	status = "okay";
+    };
+
+    &gpiote130 {
+	owned-channels = <0>;
+	status = "okay";
+    };
+
+// temp fix to compile for radio core:
+    &uart136 {
+	status = "okay";
+	memory-regions = <&cpurad_dma_region>;
+    };
+
+    &cpurad_dma_region {
+	reg = <0xf00 DT_SIZE_K(4)>;
+    };

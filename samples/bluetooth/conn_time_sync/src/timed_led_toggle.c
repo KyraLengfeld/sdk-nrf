@@ -30,6 +30,15 @@ static struct gpio_dt_spec led = GPIO_DT_SPEC_GET_OR(DT_ALIAS(led1), gpios, {0})
 
 static uint8_t previous_led_value;
 
+struct gpio_nrfx_cfg {
+	/* gpio_driver_config needs to be first */
+	struct gpio_driver_config common;
+	NRF_GPIO_Type *port;
+	uint32_t edge_sense;
+	uint8_t port_num;
+	nrfx_gpiote_t gpiote;
+};
+
 int timed_led_toggle_init(void)
 {
 	int err;
@@ -37,18 +46,26 @@ int timed_led_toggle_init(void)
 	uint8_t gpiote_chan_led_toggle;
 
 	const nrfx_gpiote_output_config_t gpiote_output_cfg = NRFX_GPIOTE_DEFAULT_OUTPUT_CONFIG;
-
 	err = gpio_pin_configure_dt(&led, GPIO_OUTPUT_INACTIVE);
 	if (err != 0) {
 		printk("Error %d: failed to configure LED device %s pin %d\n", err, led.port->name,
 		       led.pin);
 		return err;
 	}
+	const struct gpio_nrfx_cfg *cfg = led.port->config;
+	nrfx_gpiote_pin_t abs_led_pin = NRF_GPIO_PIN_MAP(cfg->port_num, led.pin);
+	// other ways I tried but have more issues needing to import and include more stuff:
+	// nrfx_gpiote_pin_t abs_led_pin = NRF_PIN_PORT_TO_PIN_NUMBER(led.pin, led.port);
+	// nrfx_gpiote_pin_t abs_led_pin = DT_INST_PROP(0, req_pin);
+	// nrfx_gpiote_pin_t abs_led_pin = 289;
 
 	if (nrfx_gpiote_channel_alloc(&gpiote, &gpiote_chan_led_toggle) != NRFX_SUCCESS) {
 		printk("Failed allocating GPIOTE chan for setting led\n");
 		return -ENOMEM;
 	}
+#if defined(CONFIG_SOC_SERIES_NRF54HX)
+	led.dt_flags = GPIO_ACTIVE_HIGH; // workaround, because default is not set/not set correctly
+#endif
 
 	const nrfx_gpiote_task_config_t task_cfg_led_toggle = {
 		.task_ch = gpiote_chan_led_toggle,
@@ -57,7 +74,8 @@ int timed_led_toggle_init(void)
 			NRF_GPIOTE_INITIAL_VALUE_LOW : NRF_GPIOTE_INITIAL_VALUE_HIGH,
 	};
 
-	if (nrfx_gpiote_output_configure(&gpiote, led.pin, &gpiote_output_cfg,
+	printk("CONFIGURING LED\n");
+	if (nrfx_gpiote_output_configure(&gpiote, abs_led_pin, &gpiote_output_cfg,
 					 &task_cfg_led_toggle) != NRFX_SUCCESS) {
 		printk("Failed configuring GPIOTE chan for toggling led\n");
 		return -ENOMEM;
@@ -70,10 +88,10 @@ int timed_led_toggle_init(void)
 
 	nrfx_gppi_channel_endpoints_setup(ppi_chan_led_toggle,
 					  controller_time_trigger_event_addr_get(),
-					  nrfx_gpiote_out_task_address_get(&gpiote, led.pin));
+					  nrfx_gpiote_out_task_address_get(&gpiote, abs_led_pin));
 
 	nrfx_gppi_channels_enable(BIT(ppi_chan_led_toggle));
-	nrfx_gpiote_out_task_enable(&gpiote, led.pin);
+	nrfx_gpiote_out_task_enable(&gpiote, abs_led_pin);
 
 	return 0;
 }
