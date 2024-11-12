@@ -68,7 +68,7 @@ void mpsl_pm_utils_work_handler(void)
 	}
 	case MPSL_PM_EVENT_STATE_BEFORE_EVENT:
 	{
-		/* In case we missed a state and are in zero-latency, set low-latency.*/
+		/* In case we missed a state and are in zero-latency, set low-latency. */
 		m_update_latency_request(PM_MAX_LATENCY_HCI_COMMANDS_US);
 
 		/* Note: Considering an overflow could only happen if the system runs many years,
@@ -76,11 +76,15 @@ void mpsl_pm_utils_work_handler(void)
 		 */
 		int64_t current_time_us = k_uptime_get() * 1000;
 		uint64_t relative_time_us = params.event_time_abs_us - current_time_us;
-		uint64_t max_cycles_until_event = k_us_to_cyc_floor64(relative_time_us);
+		uint64_t max_ticks_until_event = k_us_to_ticks_floor64(relative_time_us);
 
-		if (max_cycles_until_event > UINT32_MAX) {
-			/* The event is too far in the future and would
-			 * exceed the 32-bit cycle limit.
+		if (max_ticks_until_event <= 0) {
+			/* event in the past */
+			return;
+		}
+
+		if (max_ticks_until_event > INT64_MAX) {
+			/* The event is too far in the future, VERY unlikely case.
 			 */
 			uint64_t event_delay_us = params.event_time_abs_us - current_time_us -
 						  TIME_TO_REGISTER_EVENT_IN_ZEPHYR_US;
@@ -93,16 +97,13 @@ void mpsl_pm_utils_work_handler(void)
 				mpsl_work_schedule(&pm_work, K_USEC((uint32_t)event_delay_us));
 			}
 #endif
-			return;
 		}
 
-		/* Event scheduled */
+		/* Schedule event*/
 		if (m_pm_event_is_registered) {
-			pm_policy_event_update(&m_evt,
-					       k_us_to_cyc_floor32(params.event_time_abs_us));
+			pm_policy_event_update(&m_evt, (int64_t)k_us_to_ticks_floor64(params.event_time_abs_us));
 		} else {
-			pm_policy_event_register(&m_evt,
-						 k_us_to_cyc_floor32(params.event_time_abs_us));
+			pm_policy_event_register(&m_evt, (int64_t)k_us_to_ticks_floor64(params.event_time_abs_us));
 			m_pm_event_is_registered = true;
 		}
 		break;
