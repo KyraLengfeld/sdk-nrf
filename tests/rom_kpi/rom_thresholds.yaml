@@ -1,0 +1,12 @@
+thresholds:
+  # nrf52840dk/nrf52840: 65536 # 64 KB
+  nrf5340dk/nrf5340/cpuapp:
+    central_bas: 98304 # 96 KB
+    central_hr: 98304 # 96 KB
+  nrf5340dk/nrf5340/cpunet:
+    central_bas: 32768 # 32 KB
+    central_hr: 32768 # 32 KB
+  nrf5340dk:
+    central_bas: 98304 # 96 KB
+    central_hr: 98304 # 96 KB
+  # nrf54l15dk/nrf54l15: 65536 # 64 KB
