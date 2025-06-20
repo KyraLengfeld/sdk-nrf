@@ -1,5 +1,5 @@
 tests:
-  rom_kpi.analysis:
+  rom_kpi.test:
     platform_allow:
       - nrf52840dk/nrf52840
       - nrf5340dk/nrf5340/cpuapp
@@ -12,3 +12,4 @@ tests:
     tags:
       - rom_kpi # or zephyr_kpi?
     # harness: ztest
+    # sysbuild: false
