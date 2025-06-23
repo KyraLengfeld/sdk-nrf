@@ -11,5 +11,4 @@ tests:
       - nrf5340dk/nrf5340/cpuapp
     tags:
       - rom_kpi # or zephyr_kpi?
-    # harness: ztest
     sysbuild: false
