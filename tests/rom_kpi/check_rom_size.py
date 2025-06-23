@@ -15,8 +15,17 @@ def find_identifier(symbol_tree, ident):
     return None
 
 if __name__ == "__main__":
+    THRESHOLD = 51969
     print("Checking ROM size in", sys.argv[1])
     with open(os.path.join(sys.argv[1], "rom.json")) as json_file:
         report = json.load(json_file)
         host_symbol = find_identifier(report['symbols'], 'subsys/bluetooth/host')
         print(host_symbol["identifier"], host_symbol["size"])
+
+        size = host_symbol["size"]
+        if size > THRESHOLD:
+            print(f"FAIL: ROM size exceeds threshold of {THRESHOLD} bytes.")
+            sys.exit(1)
+        else:
+            print("PASS: ROM size is within threshold.")
+            sys.exit(0)
