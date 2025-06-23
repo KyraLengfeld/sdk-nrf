@@ -12,4 +12,4 @@ tests:
     tags:
       - rom_kpi # or zephyr_kpi?
     # harness: ztest
-    # sysbuild: false
+    sysbuild: false
