@@ -15,6 +15,7 @@ project(rom_kpi_test)
 target_sources(app PRIVATE ${APPLICATION_SOURCE_DIR}/src/main.c)
 
 add_custom_target(check_rom_size ALL
-  ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/check_rom_size.py ${CMAKE_BINARY_DIR}
+  COMMAND ${CMAKE_COMMAND} -E env ZEPHYR_BOARD=${BOARD}
+          ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/check_rom_size.py ${CMAKE_BINARY_DIR}
   DEPENDS rom_report
 )

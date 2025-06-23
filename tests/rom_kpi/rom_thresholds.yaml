@@ -1,0 +1,5 @@
+thresholds:
+  nrf52840dk/nrf52840: 65536 # 64 KB
+  nrf5340dk/nrf5340/cpuapp: 51969 # 98304 # 96 KB
+  nrf5340dk/nrf5340/cpunet: 32768 # 32 KB
+  nrf54l15dk/nrf54l15: 65536 # 64 KB
