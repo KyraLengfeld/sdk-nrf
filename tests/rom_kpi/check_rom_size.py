@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
         size = host_symbol["size"]
         if size > threshold:
-            print(f"FAIL: ROM size exceeds threshold of {THRESHOLD} bytes.")
+            print(f"FAIL: ROM size exceeds threshold of {threshold} bytes.")
             sys.exit(1)
         else:
             print("PASS: ROM size is within threshold.")
