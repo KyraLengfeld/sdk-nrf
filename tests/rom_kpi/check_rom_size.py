@@ -41,6 +41,9 @@ if __name__ == "__main__":
         print(host_symbol["identifier"], host_symbol["size"])
 
         size = host_symbol["size"]
+        # -> push to influxDB (calling some other python script) ?
+        # rather: create some file with the result here. probably filtered json file (rom_results.json).
+        # these rom_result.json should be taken by new influxdb_pusher.py, within influxdb_pusher.py generate new data object from rom_result.json
         if size > threshold:
             print(f"FAIL: ROM size exceeds threshold of {threshold} bytes.")
             sys.exit(1)
