@@ -73,6 +73,8 @@ if __name__ == "__main__":
         for ident, s in matches:
             print(f"{ident}: {s} bytes")
         print(f"Total size: {size} bytes")
+        # -> push to influxDB (calling some other python script) ?
+        # rather: create some file with the result here. probably filtered json file (rom_results.json).
         if size > threshold:
             print(f"FAIL: ROM size exceeds threshold of {threshold} bytes.")
             sys.exit(1)
