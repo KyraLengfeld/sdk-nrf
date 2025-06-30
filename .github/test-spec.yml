@@ -220,6 +220,7 @@
   - "subsys/mpsl/**/*"
   - "subsys/nrf_security/**/*"
   - "drivers/mpsl/**/*"
+  - "tests/rom_kpi/*"
 
 "CI-ble-samples-test":
   - "samples/bluetooth/central_and_peripheral_hr/*"

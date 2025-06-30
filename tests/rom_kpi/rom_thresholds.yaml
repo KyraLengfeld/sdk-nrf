@@ -1,0 +1,7 @@
+thresholds:
+  nrf52840dk: 53117 # suggestion: 65536 # 64 KB
+  nrf5340dk: 54319 # suggestion: 65536 # 64 KB
+  nrf54l15dk: 52627 # suggestion: 65536 # 64 KB
+  nrf54h20dk: 54261 # suggestion: 65536 # 64 KB
+
+# Note: it is expected to build for cpuapp, not cpunet
